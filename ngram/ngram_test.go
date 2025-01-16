@@ -1,4 +1,4 @@
-package ngarm
+package ngram
 
 import (
 	"reflect"

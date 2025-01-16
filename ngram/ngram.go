@@ -1,4 +1,4 @@
-package ngarm
+package ngram
 
 import (
 	"strings"
@@ -45,7 +45,7 @@ var (
 	}
 )
 
-func NGramOptimized(text string, n uint) []string {
+func NGram(text string, n uint) []string {
 	// 去除首尾空格
 	text = strings.TrimSpace(text)
 	if n == 0 || text == "" {
