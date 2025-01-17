@@ -319,3 +319,14 @@ func NGramSpace(text string, n uint) []string {
 
 	return result
 }
+
+func NGramList(l []string, n uint) (result []string) {
+	for _, s := range l {
+		for _, w := range NGram(s, n) {
+			if w != "" {
+				result = append(result, w)
+			}
+		}
+	}
+	return
+}
