@@ -219,7 +219,7 @@ func TestNGram(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NGramOptimized(tt.text, tt.n)
+			got := NGram(tt.text, tt.n)
 			if !reflect.DeepEqual(got, tt.expected) {
 				t.Errorf("NGram() = %+v, want %+v", got, tt.expected)
 			}
@@ -299,7 +299,7 @@ func TestNGramOptimizedWithCJKDetection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NGramOptimized(tt.text, tt.n)
+			got := NGram(tt.text, tt.n)
 			if !reflect.DeepEqual(got, tt.expected) {
 				t.Errorf("NGramOptimized() = %v, want %v", got, tt.expected)
 			}
