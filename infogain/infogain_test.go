@@ -64,6 +64,7 @@ func TestInfoGainFit(t *testing.T) {
 			t.Errorf("特征 '%s' 的信息增益分数不匹配: 期望 %.4f, 得到 %.4f", feature, expectedScore, score)
 		}
 	}
+
 }
 
 // TestInfoGainFitWithTokens 测试使用已分词文本的FitWithTokens方法

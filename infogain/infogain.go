@@ -20,6 +20,7 @@ type InfoGain struct {
 	maxFeatures    int                       // 每个类别的最大特征数，如果为0或负数则保留所有特征
 	vocab          map[string]bool           // 词汇表，保存所有选中的特征
 	features       []string                  // 已排序的特征列表
+	featureToIndex map[string]int32          // 特征到索引的映射
 	scores         map[string]float64        // 特征的信息增益分数
 	numFeatures    int                       // 特征总数
 	featureInLabel map[string]map[string]int // 特征在每个类别中的出现次数
@@ -204,8 +205,10 @@ func (ig *InfoGain) FitWithTokens(tokens [][]string, targets []string) {
 
 	// 选择特征
 	if ig.maxFeatures > 0 {
+		ig.featureToIndex = make(map[string]int32, ig.maxFeatures)
 		ig.features = make([]string, 0, ig.maxFeatures)
 	} else {
+		ig.featureToIndex = make(map[string]int32, len(scoreSlice))
 		ig.features = make([]string, 0, len(scoreSlice))
 	}
 
@@ -238,6 +241,10 @@ func (ig *InfoGain) FitWithTokens(tokens [][]string, targets []string) {
 
 	sort.Strings(ig.features)
 	ig.numFeatures = len(ig.features)
+
+	for i, feature := range ig.features {
+		ig.featureToIndex[feature] = int32(i)
+	}
 }
 
 func (ig *InfoGain) TransformWithToken(token []string, normalize bool) (*matrix.SparseMatrix, []string) {
@@ -254,7 +261,7 @@ func (ig *InfoGain) TransformWithToken(token []string, normalize bool) (*matrix.
 func (ig *InfoGain) TransformWithTokens(tokens [][]string, normalize bool) (*matrix.SparseMatrix, []string) {
 	numWorkers := runtime.NumCPU()
 	rows := len(tokens)
-	cols := len(ig.features)
+	cols := ig.numFeatures
 
 	type transformTask struct {
 		docIdx int
@@ -311,13 +318,20 @@ func (ig *InfoGain) TransformWithTokens(tokens [][]string, normalize bool) (*mat
 				var rowIndices []int
 				var colIndices []int
 
-				for j, feature := range ig.features {
-					if score := docScores[feature]; score > 0 {
+				for feature, score := range docScores {
+					if score != 0 {
 						nonZeros = append(nonZeros, score)
 						rowIndices = append(rowIndices, task.docIdx)
-						colIndices = append(colIndices, j)
+						colIndices = append(colIndices, int(ig.featureToIndex[feature]))
 					}
 				}
+				// for j, feature := range ig.features {
+				// 	if score := docScores[feature]; score > 0 {
+				// 		nonZeros = append(nonZeros, score)
+				// 		rowIndices = append(rowIndices, task.docIdx)
+				// 		colIndices = append(colIndices, j)
+				// 	}
+				// }
 
 				resultChan <- transformResult{
 					docIdx:     task.docIdx,
@@ -436,9 +450,10 @@ func (ig *InfoGain) GetFeatureScores() []utils.FeatureScore {
 // 返回值: 错误信息
 func (ig *InfoGain) Save(filename string) error {
 	model := &infogainpb.InfoGainModel{
-		MaxFeatures: int32(ig.maxFeatures),
-		Scores:      ig.scores,
-		NumFeatures: int32(ig.numFeatures),
+		MaxFeatures:    int32(ig.maxFeatures),
+		FeatureToIndex: ig.featureToIndex,
+		Scores:         ig.scores,
+		NumFeatures:    int32(ig.numFeatures),
 	}
 
 	data, err := proto.Marshal(model)
@@ -465,6 +480,7 @@ func (ig *InfoGain) Load(filename string) error {
 
 	ig.maxFeatures = int(model.GetMaxFeatures())
 	ig.scores = model.GetScores()
+	ig.featureToIndex = model.GetFeatureToIndex()
 
 	// 按分数重建特征列表
 	var scoreSlice []utils.FeatureScore
