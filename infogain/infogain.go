@@ -240,6 +240,11 @@ func (ig *InfoGain) FitWithTokens(tokens [][]string, targets []string) {
 	ig.numFeatures = len(ig.features)
 }
 
+func (ig *InfoGain) TransformWithToken(token []string, normalize bool) (*matrix.SparseMatrix, []string) {
+	tokens := [][]string{token}
+	return ig.TransformWithTokens(tokens, normalize)
+}
+
 // TransformWithTokens 将已分词的文本转换为特征矩阵
 // tokens: 已分词的文本列表
 // normalize: 是否对特征值进行L2归一化
