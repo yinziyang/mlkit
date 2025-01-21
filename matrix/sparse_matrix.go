@@ -327,3 +327,90 @@ func DenseToSparse(dense [][]float64) *SparseMatrix {
 		ColIdx: colIdx,
 	}
 }
+
+func MergeMultipleSparseMatrixCols(matrices ...*SparseMatrix) (*SparseMatrix, error) {
+	if len(matrices) == 0 {
+		return nil, fmt.Errorf("没有提供矩阵")
+	}
+
+	// 验证所有矩阵的行数是否匹配
+	numRows := matrices[0].Rows
+	for _, matrix := range matrices {
+		if matrix.Rows != numRows {
+			return nil, fmt.Errorf("行数不匹配: %d != %d", matrix.Rows, numRows)
+		}
+	}
+
+	// 计算合并后的列数和数据容量
+	totalCols := 0
+	totalData := 0
+	for _, matrix := range matrices {
+		totalCols += matrix.Cols
+		totalData += len(matrix.Data)
+	}
+
+	// 创建新的稀疏矩阵
+	merged := &SparseMatrix{
+		Rows:   numRows,
+		Cols:   totalCols,
+		Data:   make([]float64, 0, totalData),
+		RowIdx: make([]int, 0, totalData),
+		ColIdx: make([]int, 0, totalData),
+	}
+
+	// 复制所有矩阵的数据，并调整列索引
+	currentColOffset := 0
+	for _, matrix := range matrices {
+		merged.Data = append(merged.Data, matrix.Data...)
+		for i := range matrix.ColIdx {
+			merged.RowIdx = append(merged.RowIdx, matrix.RowIdx[i])
+			merged.ColIdx = append(merged.ColIdx, matrix.ColIdx[i]+currentColOffset)
+		}
+		currentColOffset += matrix.Cols
+	}
+	return merged, nil
+}
+
+func MergeMultipleSparseMatrixRows(matrices ...*SparseMatrix) (*SparseMatrix, error) {
+	if len(matrices) == 0 {
+		return nil, fmt.Errorf("没有提供矩阵")
+	}
+
+	// 验证所有矩阵的特征维度是否匹配
+	numFeatures := matrices[0].Cols
+	for _, matrix := range matrices {
+		if matrix.Cols != numFeatures {
+			return nil, fmt.Errorf("特征维度不匹配: %d != %d", matrix.Cols, numFeatures)
+		}
+	}
+
+	// 计算合并后的行数和数据容量
+	totalRows := 0
+	totalData := 0
+	for _, matrix := range matrices {
+		totalRows += matrix.Rows
+		totalData += len(matrix.Data)
+	}
+
+	// 创建新的稀疏矩阵
+	merged := &SparseMatrix{
+		Rows:   totalRows,
+		Cols:   numFeatures,
+		Data:   make([]float64, 0, totalData),
+		RowIdx: make([]int, 0, totalData),
+		ColIdx: make([]int, 0, totalData),
+	}
+
+	// 复制所有矩阵的数据，并调整行索引
+	currentRowOffset := 0
+	for _, matrix := range matrices {
+		merged.Data = append(merged.Data, matrix.Data...)
+		for i := range matrix.RowIdx {
+			merged.RowIdx = append(merged.RowIdx, matrix.RowIdx[i]+currentRowOffset)
+			merged.ColIdx = append(merged.ColIdx, matrix.ColIdx[i])
+		}
+		currentRowOffset += matrix.Rows
+	}
+
+	return merged, nil
+}

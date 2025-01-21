@@ -414,6 +414,18 @@ func (ig *InfoGain) GetVocab() map[string]bool {
 	return ig.vocab
 }
 
+// GetFeatures 返回按信息增益分数排序的特征列表及其分数
+func (ig *InfoGain) GetFeatureScores() []utils.FeatureScore {
+	features := make([]utils.FeatureScore, len(ig.features))
+	for i, feature := range ig.features {
+		features[i] = utils.FeatureScore{
+			Feature: feature,
+			Score:   ig.scores[feature],
+		}
+	}
+	return features
+}
+
 // Save 将模型保存到文件
 // filename: 保存的文件路径
 // 返回值: 错误信息
